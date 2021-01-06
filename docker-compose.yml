@@ -1,0 +1,11 @@
+version: '3.7'
+services:
+  client:
+# TODO: the idea is that we want to save and load an image, so we should use the
+# image property, not build and then the workflow is just 1) get the tarred up
+# image 2) docker load < fcc.tar.gz 3) docker-compose up
+    env_file: .env
+    build: .
+    restart: unless-stopped
+    ports:
+      - '8000:8000'
