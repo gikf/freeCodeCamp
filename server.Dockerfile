@@ -1,7 +1,7 @@
 FROM node:12.20
 USER node
 WORKDIR /home/node
-COPY . .
+COPY --chown=node:node . .
 
 # TODO: only install the bits we need, rather than client, root etc. etc.
 RUN npm ci
