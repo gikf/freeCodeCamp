@@ -16,6 +16,12 @@ describe('multifileCertProjects', function () {
 
   beforeEach(() => {
     cy.preserveSession();
+    cy.intercept(`${String(Cypress.env('API_LOCATION'))}/save-challenge`).as(
+      'saveChallenge'
+    );
+    cy.intercept(
+      `${String(Cypress.env('API_LOCATION'))}/user/get-session-user`
+    ).as('sessionUser');
     cy.visit(
       'learn/responsive-web-design/responsive-web-design-projects/build-a-tribute-page'
     );
@@ -30,9 +36,11 @@ describe('multifileCertProjects', function () {
       .clear()
       .type(save1text);
     cy.get(editorElements.saveCodeBtn).click();
+    cy.wait('@saveChallenge');
     cy.contains('Your code was saved to the database.');
     // load saved code on a hard refresh
     cy.reload();
+    cy.wait('@sessionUser');
     cy.get(editorElements.container)
       .find(editorElements.editor)
       .contains(save1text);
@@ -44,12 +52,14 @@ describe('multifileCertProjects', function () {
     cy.exec('npm run seed');
     // and the redux store:
     cy.reload();
+    cy.wait('@sessionUser');
     cy.get(editorElements.container)
       .find(editorElements.editor)
       .click()
       .focused()
       .clear()
       .type(`${save2text}{ctrl+s}`);
+    cy.wait('@saveChallenge');
     cy.contains('Your code was saved to the database.');
     cy.get(editorElements.closeFlash).click();
     // load saved code when navigating site (no hard refresh)'
@@ -61,6 +71,7 @@ describe('multifileCertProjects', function () {
       .contains(save2text);
     // trigger the warning about saving too quickly
     cy.reload();
+    cy.wait('@sessionUser');
     cy.get(editorElements.container)
       .find(editorElements.editor)
       .click()
