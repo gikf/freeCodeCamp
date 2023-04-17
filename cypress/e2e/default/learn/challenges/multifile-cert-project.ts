@@ -34,7 +34,9 @@ describe('multifileCertProjects', function () {
       .click()
       .focused()
       .clear()
+      .click()
       .type(save1text);
+    cy.get(editorElements.editor).contains(save1text);
     cy.get(editorElements.saveCodeBtn).click();
     cy.wait('@saveChallenge');
     cy.contains('Your code was saved to the database.');
@@ -58,7 +60,9 @@ describe('multifileCertProjects', function () {
       .click()
       .focused()
       .clear()
+      .click()
       .type(`${save2text}{ctrl+s}`);
+    cy.get(editorElements.editor).contains(save2text);
     cy.wait('@saveChallenge');
     cy.contains('Your code was saved to the database.');
     cy.get(editorElements.closeFlash).click();
