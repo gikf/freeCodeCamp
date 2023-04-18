@@ -44,42 +44,42 @@ describe('The hotkeys should work correctly', () => {
   });
   it('should be possible to navigate to the next challenge/projects and previous', () => {
     cy.visit(links.classic1);
-    cy.focused().type('{esc}');
-    cy.focused().type('n');
+    cy.focused().click().type('{esc}').type('n');
+    // cy.focused().click().type('n');
     cy.url().should('include', links.classic2);
     cy.contains(titles.classic2);
-    cy.focused().type('p');
+    cy.focused().click().type('p');
     cy.url().should('include', links.classic1);
     cy.visit(links.frontEnd1);
-    cy.focused().type('{esc}').type('n');
+    cy.focused().click().type('{esc}').type('n');
     cy.url().should('include', links.frontEnd2);
     cy.contains(titles.frontEnd2);
-    cy.focused().type('p');
+    cy.focused().click().type('p');
     cy.url().should('include', links.frontEnd1);
   });
 
   it('should be possible to navigate to the next (and previous) video', () => {
     cy.visit(links.video1);
-    cy.focused().type('{esc}').type('n');
+    cy.focused().click().type('{esc}n');
     cy.url().should('include', links.video2);
     cy.contains(titles.video2);
-    cy.focused().type('p');
+    cy.focused().click().type('p');
     cy.url().should('include', links.video1);
   });
 
   it('should be possible to navigate to the next (and previous) backend project', () => {
     cy.visit(links.backEnd1);
-    cy.focused().type('{esc}').type('n');
+    cy.focused().click().type('{esc}n');
     cy.url().should('include', links.backEnd2);
     cy.contains(titles.backEnd2);
-    cy.focused().type('p');
+    cy.focused().click().type('p');
     cy.url().should('include', links.backEnd1);
   });
 
   it('should be possible to focus on the editor with pressing "e"', () => {
     cy.visit(links.classic1);
     cy.get(hotKeySelectors.editorContainer).click();
-    cy.focused().as('editor').type('{esc}');
+    cy.focused().as('editor').click().type('{esc}');
     cy.get(hotKeySelectors.instructions).click().type('e');
     cy.get('@editor').should('have.focus');
   });
