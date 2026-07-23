@@ -1,6 +1,8 @@
+name: freecodecamp-localidade
+
 services:
   db:
-    image: mongo:8.0
+    image: mongo:8.2
     container_name: mongodb
     command: mongod --replSet rs0
     restart: unless-stopped
@@ -12,10 +14,10 @@ services:
     healthcheck:
       test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
       interval: 2s
-      retries: 5
+      retries: 3
 
   setup:
-    image: mongo:8.0
+    image: mongo:8.2
     depends_on:
       db:
         condition: service_healthy

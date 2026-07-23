@@ -8,7 +8,7 @@ import {
   vi
 } from 'vitest';
 
-import { Certification } from '../../../../shared/config/certification-settings.js';
+import { Certification } from '@freecodecamp/shared/config/certification-settings';
 import {
   defaultUserEmail,
   defaultUserId,
@@ -63,12 +63,22 @@ describe('certificate routes', () => {
       });
 
       test('should return 400 if certSlug is invalid', async () => {
+        const count = vi.fn();
+        const originalSentry = fastifyTestInstance.Sentry;
+        fastifyTestInstance.Sentry = {
+          ...originalSentry,
+          metrics: { ...originalSentry.metrics, count }
+        };
+
         const response = await superRequest('/certificate/verify', {
           method: 'PUT',
           setCookies
         }).send({
           certSlug: 'non-existant'
         });
+
+        fastifyTestInstance.Sentry = originalSentry;
+
         expect(response.body).toMatchObject({
           response: {
             message: 'flash.wrong-name',
@@ -76,20 +86,32 @@ describe('certificate routes', () => {
           }
         });
         expect(response.status).toBe(400);
+        expect(count).toHaveBeenCalledWith('certificate.claim_blocked', 1, {
+          attributes: { reason: 'unknown_slug' }
+        });
       });
 
       // TODO: Revisit this test after deciding if we need/want to fetch the
       // entire user during authorization or just the user id.
-      test.skip('should return 500 if user not found in db', async () => {
-        vi.spyOn(
-          fastifyTestInstance.prisma.user,
-          'findUnique'
-        ).mockImplementation(
-          () =>
-            Promise.resolve(null) as ReturnType<
-              typeof fastifyTestInstance.prisma.user.findUnique
-            >
-        );
+      test('should return 500 and capture an exception if user not found in db', async () => {
+        const findUniqueForAuth =
+          fastifyTestInstance.prisma.user.findUnique.bind(
+            fastifyTestInstance.prisma.user
+          );
+
+        vi.spyOn(fastifyTestInstance.prisma.user, 'findUnique')
+          .mockImplementationOnce(findUniqueForAuth)
+          .mockResolvedValueOnce(null);
+
+        const captureException = vi.fn();
+        const count = vi.fn();
+        const originalSentry = fastifyTestInstance.Sentry;
+        fastifyTestInstance.Sentry = {
+          ...originalSentry,
+          captureException,
+          metrics: { ...originalSentry.metrics, count }
+        };
+
         const response = await superRequest('/certificate/verify', {
           method: 'PUT',
           setCookies
@@ -97,11 +119,15 @@ describe('certificate routes', () => {
           certSlug: Certification.RespWebDesign
         });
 
+        fastifyTestInstance.Sentry = originalSentry;
+
         expect(response.body).toStrictEqual({
           message: 'flash.went-wrong',
           type: 'danger'
         });
         expect(response.status).toBe(500);
+        expect(captureException).toHaveBeenCalledOnce();
+        expect(count).toHaveBeenCalledWith('certificate.claim_user_missing', 1);
       });
 
       test('should return 400 if user has not set a `name`', async () => {
@@ -112,12 +138,21 @@ describe('certificate routes', () => {
           }
         });
 
+        const count = vi.fn();
+        const originalSentry = fastifyTestInstance.Sentry;
+        fastifyTestInstance.Sentry = {
+          ...originalSentry,
+          metrics: { ...originalSentry.metrics, count }
+        };
+
         const response = await superRequest('/certificate/verify', {
           method: 'PUT',
           setCookies
         }).send({
           certSlug: Certification.RespWebDesign
         });
+
+        fastifyTestInstance.Sentry = originalSentry;
 
         expect(response.body).toMatchObject({
           response: {
@@ -127,6 +162,7 @@ describe('certificate routes', () => {
           isCertMap: {
             is2018DataVisCert: false,
             isA2EnglishCert: false,
+            isB1EnglishCert: false,
             isApisMicroservicesCert: false,
             isBackEndCert: false,
             isCollegeAlgebraPyCertV8: false,
@@ -135,6 +171,7 @@ describe('certificate routes', () => {
             isFoundationalCSharpCertV8: false,
             isFrontEndCert: false,
             isFrontEndLibsCert: false,
+            isFrontEndLibsCertV9: false,
             isFullStackCert: false,
             isInfosecCertV7: false,
             isInfosecQaCert: false,
@@ -152,6 +189,12 @@ describe('certificate routes', () => {
           completedChallenges: []
         });
         expect(response.status).toBe(400);
+        expect(count).toHaveBeenCalledWith('certificate.claim_blocked', 1, {
+          attributes: {
+            certSlug: Certification.RespWebDesign,
+            reason: 'name_missing'
+          }
+        });
       });
 
       test('should return 200 if user already claimed cert', async () => {
@@ -161,12 +204,22 @@ describe('certificate routes', () => {
             isRespWebDesignCert: true
           }
         });
+
+        const count = vi.fn();
+        const originalSentry = fastifyTestInstance.Sentry;
+        fastifyTestInstance.Sentry = {
+          ...originalSentry,
+          metrics: { ...originalSentry.metrics, count }
+        };
+
         const response = await superRequest('/certificate/verify', {
           method: 'PUT',
           setCookies
         }).send({
           certSlug: Certification.RespWebDesign
         });
+
+        fastifyTestInstance.Sentry = originalSentry;
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         expect(response.body.response).toStrictEqual({
@@ -178,6 +231,12 @@ describe('certificate routes', () => {
         });
 
         expect(response.status).toBe(200);
+        expect(count).toHaveBeenCalledWith('certificate.claim_blocked', 1, {
+          attributes: {
+            certSlug: Certification.RespWebDesign,
+            reason: 'already_claimed'
+          }
+        });
       });
 
       test('should return 400 if not all requirements have been met to claim', async () => {
@@ -193,12 +252,22 @@ describe('certificate routes', () => {
             isRespWebDesignCert: false
           }
         });
+
+        const count = vi.fn();
+        const originalSentry = fastifyTestInstance.Sentry;
+        fastifyTestInstance.Sentry = {
+          ...originalSentry,
+          metrics: { ...originalSentry.metrics, count }
+        };
+
         const response = await superRequest('/certificate/verify', {
           method: 'PUT',
           setCookies
         }).send({
           certSlug: Certification.RespWebDesign
         });
+
+        fastifyTestInstance.Sentry = originalSentry;
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         expect(response.body.response).toStrictEqual({
@@ -207,10 +276,16 @@ describe('certificate routes', () => {
           variables: { name: 'Legacy Responsive Web Design V8' }
         });
         expect(response.status).toBe(400);
+        expect(count).toHaveBeenCalledWith('certificate.claim_blocked', 1, {
+          attributes: {
+            certSlug: Certification.RespWebDesign,
+            reason: 'incomplete_steps'
+          }
+        });
       });
 
       // Note: Email does not actually send (work) in development, but status should still be 200.
-      test('should send the certified email, if all current certifications are met', async () => {
+      test('should send the certified email when full stack developer v9 is claimed', async () => {
         await fastifyTestInstance.prisma.user.updateMany({
           where: { email: defaultUserEmail },
           data: {
@@ -221,24 +296,7 @@ describe('certificate routes', () => {
               { id: '587d78b0367417b2b2512b05', completedDate: 123456789 },
               { id: 'bd7158d8c242eddfaeb5bd13', completedDate: 123456789 }
             ],
-            is2018DataVisCert: true,
-            isA2EnglishCert: true,
-            isApisMicroservicesCert: true,
-            isCollegeAlgebraPyCertV8: true,
-            isDataAnalysisPyCertV7: true,
-            isFoundationalCSharpCertV8: true,
-            isFrontEndLibsCert: true,
-            isInfosecCertV7: true,
-            isJavascriptCertV9: true,
-            isJsAlgoDataStructCertV8: true,
-            isMachineLearningPyCertV7: true,
-            isPythonCertV9: true,
-            isQaCertV7: true,
-            isRelationalDatabaseCertV8: true,
-            isRelationalDatabaseCertV9: true,
-            isRespWebDesignCert: false,
-            isRespWebDesignCertV9: true,
-            isSciCompPyCertV7: true
+            isFullStackDeveloperCertV9: true
           }
         });
 
@@ -252,6 +310,41 @@ describe('certificate routes', () => {
         });
 
         expect(spy).toHaveBeenCalled();
+        expect(response.status).toBe(200);
+      });
+
+      test('should capture an exception if the congratulations email fails to send', async () => {
+        await fastifyTestInstance.prisma.user.updateMany({
+          where: { email: defaultUserEmail },
+          data: {
+            completedChallenges: [
+              { id: 'bd7158d8c442eddfaeb5bd18', completedDate: 123456789 },
+              { id: '587d78af367417b2b2512b03', completedDate: 123456789 },
+              { id: '587d78af367417b2b2512b04', completedDate: 123456789 },
+              { id: '587d78b0367417b2b2512b05', completedDate: 123456789 },
+              { id: 'bd7158d8c242eddfaeb5bd13', completedDate: 123456789 }
+            ],
+            isFullStackDeveloperCertV9: true
+          }
+        });
+
+        vi.spyOn(fastifyTestInstance, 'sendEmail').mockRejectedValueOnce(
+          new Error('send failed')
+        );
+        const captureException = vi.fn();
+        const originalSentry = fastifyTestInstance.Sentry;
+        fastifyTestInstance.Sentry = { ...originalSentry, captureException };
+
+        const response = await superRequest('/certificate/verify', {
+          method: 'PUT',
+          setCookies
+        }).send({
+          certSlug: Certification.RespWebDesign
+        });
+
+        fastifyTestInstance.Sentry = originalSentry;
+
+        expect(captureException).toHaveBeenCalledOnce();
         expect(response.status).toBe(200);
       });
 
@@ -270,12 +363,21 @@ describe('certificate routes', () => {
           }
         });
 
+        const count = vi.fn();
+        const originalSentry = fastifyTestInstance.Sentry;
+        fastifyTestInstance.Sentry = {
+          ...originalSentry,
+          metrics: { ...originalSentry.metrics, count }
+        };
+
         const response = await superRequest('/certificate/verify', {
           method: 'PUT',
           setCookies
         }).send({
           certSlug: Certification.RespWebDesign
         });
+
+        fastifyTestInstance.Sentry = originalSentry;
 
         const user = await fastifyTestInstance.prisma.user.findFirst({
           where: { email: defaultUserEmail }
@@ -360,6 +462,9 @@ describe('certificate routes', () => {
             }
           ]
         });
+        expect(count).toHaveBeenCalledWith('certificate.claimed', 1, {
+          attributes: { certSlug: Certification.RespWebDesign }
+        });
         expect(response.status).toBe(200);
       });
 
@@ -440,11 +545,10 @@ describe('certificate routes', () => {
           }
         });
 
-        vi.spyOn(fastifyTestInstance.prisma.user, 'update').mockImplementation(
-          () => {
-            throw new Error('test');
-          }
-        );
+        vi.spyOn(fastifyTestInstance.prisma, 'user', 'get').mockReturnValue({
+          ...fastifyTestInstance.prisma.user,
+          update: vi.fn().mockRejectedValueOnce(new Error('test'))
+        });
 
         const response = await superRequest('/certificate/verify', {
           method: 'PUT',

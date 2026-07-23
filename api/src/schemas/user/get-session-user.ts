@@ -1,5 +1,10 @@
 import { Type } from '@fastify/type-provider-typebox';
-import { examResults, profileUI, savedChallenge } from '../types.js';
+import {
+  examResults,
+  profileUI,
+  savedChallenge,
+  experience
+} from '../types.js';
 
 const languages = Type.Array(
   Type.Union([Type.Literal('javascript'), Type.Literal('python')])
@@ -80,6 +85,7 @@ export const getSessionUser = {
           isFrontEndLibsCert: Type.Boolean(),
           isFullStackCert: Type.Boolean(),
           isJavascriptCertV9: Type.Boolean(),
+          isClassroomAccount: Type.Boolean(),
           isHonest: Type.Boolean(),
           isInfosecCertV7: Type.Boolean(),
           isInfosecQaCert: Type.Boolean(),
@@ -118,8 +124,10 @@ export const getSessionUser = {
               url: Type.String()
             })
           ),
-          profileUI: Type.Optional(profileUI),
+          experience: Type.Optional(Type.Array(experience)),
+          profileUI,
           sendQuincyEmail: Type.Union([Type.Null(), Type.Boolean()]), //           // Tri-state: null (likely new user), true (subscribed), false (unsubscribed)
+          socrates: Type.Optional(Type.Boolean()),
           theme: Type.String(),
           twitter: Type.Optional(Type.String()),
           bluesky: Type.Optional(Type.String()),

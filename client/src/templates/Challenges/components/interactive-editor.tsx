@@ -1,7 +1,15 @@
 import React, { useMemo } from 'react';
-import { Sandpack } from '@codesandbox/sandpack-react';
+import {
+  FileTabs,
+  SandpackConsole,
+  SandpackLayout,
+  SandpackPreview,
+  SandpackProvider,
+  SandpackStack
+} from '@codesandbox/sandpack-react';
 import { freeCodeCampDark } from '@codesandbox/sandpack-themes';
 import './interactive-editor.css';
+import CustomMonacoEditor from './custom-monaco-editor';
 
 export interface InteractiveFile {
   ext: string;
@@ -59,9 +67,9 @@ const InteractiveEditor = ({ files }: Props) => {
   return (
     <div
       className='interactive-editor-wrapper'
-      data-playwright-test-label='sp-interactive-editor'
+      data-testid='sp-interactive-editor'
     >
-      <Sandpack
+      <SandpackProvider
         template={
           got('tsx')
             ? 'react-ts'
@@ -83,15 +91,38 @@ const InteractiveEditor = ({ files }: Props) => {
           },
           syntax: freeCodeCampDarkSyntax
         }}
-        options={{
-          editorHeight: 450,
-          editorWidthPercentage: 60,
-          showConsole: showConsole,
-          showConsoleButton: showConsole,
-          layout: layout,
-          showLineNumbers: true
-        }}
-      />
+      >
+        <SandpackLayout className='interactive-layout'>
+          <SandpackStack className='interactive-editor-column'>
+            {files.length > 1 && <FileTabs />}
+            <CustomMonacoEditor />
+          </SandpackStack>
+
+          <SandpackStack className='interactive-preview-column'>
+            {layout === 'preview' ? (
+              showConsole ? (
+                <>
+                  <SandpackPreview
+                    data-testid='sp-preview'
+                    style={{ flex: 1.5 }}
+                  />
+                  <SandpackConsole
+                    data-testid='sp-console'
+                    style={{
+                      flex: 1,
+                      overflow: 'scroll'
+                    }}
+                  />
+                </>
+              ) : (
+                <SandpackPreview />
+              )
+            ) : (
+              <SandpackConsole data-testid='sp-console' standalone={true} />
+            )}
+          </SandpackStack>
+        </SandpackLayout>
+      </SandpackProvider>
     </div>
   );
 };

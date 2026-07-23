@@ -7,7 +7,7 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'path';
 
-const CURRICULUM_PATH = '../../../shared-dist/config/curriculum.json';
+const CURRICULUM_PATH = '../../../curriculum/generated/curriculum.json';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Curriculum is read using fs, because it is too large for VSCode's LSP to handle type inference which causes annoying behavior.
 const curriculum = JSON.parse(
@@ -81,3 +81,21 @@ const examChallenges = challenges.reduce((acc, curr) => {
  * @returns A boolean indicating if the challenge id is an exam challenge.
  */
 export const isExamId = (id: string): boolean => examChallenges.has(id);
+
+/**
+ * Get all challenge IDs for a specific block.
+ * @param blockId The dashedName of the block.
+ * @returns An array of challenge IDs for the block, or empty array if block not found.
+ */
+export function getChallengeIdsByBlock(blockId: string): string[] {
+  const curricula = Object.values(curriculum);
+
+  for (const superBlock of curricula) {
+    const block = superBlock.blocks[blockId];
+    if (block) {
+      return block.challenges.map(challenge => challenge.id);
+    }
+  }
+
+  return [];
+}
